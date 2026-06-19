@@ -1,0 +1,82 @@
+name: Deploy AWS Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type deploy to confirm deployment'
+        required: true
+
+env:
+  AWS_REGION: "eu-west-1"
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read           
+
+jobs:
+  deploy:
+    name: Deploy AWS Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Verify Code Testing Succeeded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST_STATUS=$(gh run list --workflow="Code Testing" --branch=main --limit=1 --json conclusion --jq '.[0].conclusion')
+          if [ "$LAST_STATUS" != "success" ]; then
+            echo "Error: Code tests did not succeed."
+            exit 1
+          fi
+      
+      - name: Verify Deploy Intention
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "Deployment validation failed. You must type 'deploy' to proceed."
+            exit 1
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Mask AWS Account ID
+        run: |
+          echo "::add-mask::${{ secrets.AWS_ACCOUNT_ID }}"
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest .
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+
+      - name: Terraform Deploy
+        env:
+          TF_VAR_TEST_BUCKET_NAME: ${{ secrets.TEST_BUCKET_NAME }}
+          TF_VAR_TEST_TABLE_NAME: ${{ secrets.TEST_TABLE_NAME }} 
+          TF_VAR_ECR_REPOSITORY_NAME: ${{ secrets.ECR_REPOSITORY_NAME }} 
+          TF_VAR_AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }} 
+          TF_VAR_API_AUDIENCE: ${{ secrets.API_AUDIENCE }}  
+        run: |
+          cd terraform
+          terraform init -backend-config="bucket=${{ secrets.STATE_BUCKET_NAME }}"
+          terraform fmt -check
+          terraform plan -out=plan.tfplan
+          terraform apply plan.tfplan

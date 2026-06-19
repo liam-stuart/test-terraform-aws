@@ -1,0 +1,69 @@
+name: Destroy AWS Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type destroy to confirm teardown'
+        required: true
+
+env:
+  AWS_REGION: "eu-west-1"
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read              
+
+jobs:
+  destroy:
+    name: Destroy AWS Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Verify AWS Deployment Succeeded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST_STATUS=$(gh run list --workflow="Deploy AWS Infrastructure" --branch=main --limit=1 --json conclusion --jq '.[0].conclusion')
+          if [ "$LAST_STATUS" != "success" ]; then
+            echo "Error: Previous AWS deployment did not succeed."
+            exit 1
+          fi
+
+      - name: Verify Teardown Intention
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "destroy" ]; then
+            echo "Teardown validation failed. You must type 'destroy' to proceed."
+            exit 1
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mask AWS Account ID
+        run: |
+          echo "::add-mask::${{ secrets.AWS_ACCOUNT_ID }}"
+
+      - name: Terraform Destroy
+        env:
+          TF_VAR_TEST_BUCKET_NAME: ${{ secrets.TEST_BUCKET_NAME }}
+          TF_VAR_TEST_TABLE_NAME: ${{ secrets.TEST_TABLE_NAME }} 
+          TF_VAR_ECR_REPOSITORY_NAME: ${{ secrets.ECR_REPOSITORY_NAME }} 
+          TF_VAR_AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }} 
+          TF_VAR_API_AUDIENCE: ${{ secrets.API_AUDIENCE }}  
+        run: |
+          cd terraform
+          terraform init -backend-config="bucket=${{ secrets.STATE_BUCKET_NAME }}"
+          terraform destroy -auto-approve

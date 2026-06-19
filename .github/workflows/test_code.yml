@@ -1,0 +1,45 @@
+name: Code Testing
+
+on:
+  push:
+    branches: ["main"]         
+
+jobs:
+  unittest:
+    name: Unit Tests/Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Start Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      
+      - name: Unit Tests/Coverage
+        run: |
+          cd src
+          pip install -r ../requirements.txt
+          pip install pytest pytest-cov moto==5.1.22
+          python -m pytest --cov=base --cov=endpoints --cov=processing tests --cov-report= --cov-append
+          python -m coverage report --fail-under=90
+  
+  flake8:
+    name: Code Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Start Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      
+      - name: Code Format
+        run: |
+          pip install flake8 pep8-naming
+          flake8 --max-line-length=120 src
