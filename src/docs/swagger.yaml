@@ -1,0 +1,179 @@
+openapi: 3.0.1
+info:
+  title: POC API Gateway OpenAPI
+  description: API Gateway demonstration using OpenAPI Specification
+  version: 1.0.0
+
+tags:
+  - name: Endpoints
+    description: Endpoints for the user to interact with
+
+security:
+  - BearerAuth: []
+
+paths:
+  /submit:
+    post:
+      summary: Post name and age of user
+      tags:
+        - Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postschema'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${post_data_invoke_arn}"
+      responses:
+        '200':
+          description: Success
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uuidresponse'
+        '400':
+          description: Failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errormessage'
+  
+  /retrieve/{uuid}:
+    get:
+      summary: Get name and age given a specific UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+          - Endpoints
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${retrieve_data_invoke_arn}"
+      responses:
+        '200':
+          description: Success
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postschema'
+        '400':
+          description: Failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errormessage'
+    
+  /update/{uuid}:
+    post:
+      summary: Update name and age of existing UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+          - Endpoints
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${update_data_invoke_arn}"
+      responses:
+        '200':
+          description: Success
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/updateresponse'
+        '400':
+          description: Failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errormessage'
+  /delete/{uuid}:
+    delete:
+      summary: Delete name and age of existing UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      tags:
+          - Endpoints
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${delete_data_invoke_arn}"
+      responses:
+        '200':
+          description: Success
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteresponse'
+        '400':
+          description: Failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errormessage'
+      
+
+
+components:
+  schemas:
+    postschema:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+          minimum: 0
+        height:
+          type: number
+          minimum: 0
+    updateresponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'Name and age successfully updated!'
+    deleteresponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'Name and age successfully deleted!'
+    uuidresponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: 'd8a7567b-98fb-4363-a3d8-ed0296ab2936'
+    errormessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error message."
+
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: custom
+      x-amazon-apigateway-authorizer:
+        type: token
+        authorizerUri: "${authorise_invoke_arn}"
+        identitySource: method.request.header.Authorization
+        authorizerResultTtlInSeconds: 0
