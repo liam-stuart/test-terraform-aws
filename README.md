@@ -1,0 +1,7 @@
+Repository primarily for my own learning purposes. Main goal is to get familiar with using Terraform to create and manage AWS infrastructure, and to learn how to use GitHub actions to deploy/destroy the resulting infrastructure.
+
+The end result is an API Gateway REST API with basic CRUD endpoints. Users can submit a JSON file with their name, age and height (cm), which returns a UUID that can be used to either retrieve, update, or delete the submitted data. When data is submitted or updated, a processing Lambda is also triggered which converts the name to uppercase and converts height to feet and inches.
+
+Endpoints are secured with an authorisation Lambda utilising the OAuth protocol. JSON schema validation is also in place for submit/update requests. A separate workflow for code formatting and unit tests triggers on pushes to the main branch, and must succeed before the deployment workflow can occur.
+
+The Terraform configuration is bootstrapped by a [separate repository](https://github.com/liam-stuart/test-terraform-backend-config). This manages an S3 bucket for Terraform state/lock files, the ECR repository used for storing Docker images of the code, and the IAM role utilised by the deploy/destroy workflows.
