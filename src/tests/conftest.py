@@ -71,6 +71,13 @@ def fake_aws():
                 'status': {'S': 'processed'}
             }
         )
+        dynamo_client.put_item(
+            TableName='test-table',
+            Item={
+                'uuid': {'S': 'deleted-uuid'},
+                'status': {'S': 'deleted'}
+            }
+        )
         yield
 
 

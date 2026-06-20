@@ -36,6 +36,8 @@ def lambda_handler(event, context):
     if status.get('S', None) == 'processing':
         return response_creator(403, 'Data is currently being processed, '
                                      'please wait before trying to delete.')
+    elif status.get('S', None) == 'deleted':
+        return response_creator(404, 'Data for the specified UUID has already been deleted.')
     elif status.get('S', None) is None:
         return response_creator(404, 'No table entry found with specified UUID.')
 

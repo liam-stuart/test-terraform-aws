@@ -45,6 +45,14 @@ def test_delete_data_fails_during_processing(fake_aws):
                                            "please wait before trying to delete."})
 
 
+def test_delete_data_fails_already_deleted(fake_aws):
+    event = {'path': 'some-path/deleted-uuid'}
+    context = {}
+    response = lambda_handler(event, context)
+    assert response['statusCode'] == 404
+    assert response['body'] == json.dumps({"message": "Data for the specified UUID has already been deleted."})
+
+
 def test_delete_data_fails_bad_uuid(fake_aws):
     event = {'path': 'some-path/bad-uuid'}
     context = {}
