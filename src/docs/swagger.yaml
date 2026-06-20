@@ -14,35 +14,41 @@ security:
 paths:
   /submit:
     post:
-      summary: Post name and age of user
+      summary: Post name, age and height of user
       tags:
         - Endpoints
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/postschema'
+              $ref: '#/components/schemas/userdata'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
         uri: "${post_data_invoke_arn}"
       responses:
-        '200':
+        '201':
           description: Success
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/uuidresponse'
+                $ref: '#/components/schemas/postresponse'
         '400':
           description: Failure
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/errormessage'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internalmessage'
   
   /retrieve/{uuid}:
     get:
-      summary: Get name and age given a specific UUID
+      summary: Get name, age and height of existing UUID
       parameters:
         - name: uuid
           in: path
@@ -61,17 +67,29 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/postschema'
-        '400':
-          description: Failure
+                $ref: '#/components/schemas/userdata'
+        '403':
+          description: Unauthorised access (request sent during data processing)
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unauthorisedmessage'
+        '404':
+          description: UUID data missing
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/missingmessage'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/errormessage'
-    
+                $ref: '#/components/schemas/internalmessage'
+
   /update/{uuid}:
     post:
-      summary: Update name and age of existing UUID
+      summary: Update name, age and height of existing UUID
       parameters:
         - name: uuid
           in: path
@@ -80,6 +98,11 @@ paths:
             type: string
       tags:
           - Endpoints
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/userdata'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -97,9 +120,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/errormessage'
+        '403':
+          description: Unauthorised access (request sent during data processing)
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unauthorisedmessage'
+        '404':
+          description: UUID data missing
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/missingmessage'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internalmessage'
+
   /delete/{uuid}:
     delete:
-      summary: Delete name and age of existing UUID
+      summary: Delete name, age and height of existing UUID
       parameters:
         - name: uuid
           in: path
@@ -119,18 +161,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/deleteresponse'
-        '400':
-          description: Failure
+        '403':
+          description: Unauthorised access (request sent during data processing)
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unauthorisedmessage'
+        '404':
+          description: UUID data missing
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/missingmessage'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/errormessage'
+                $ref: '#/components/schemas/internalmessage'
       
-
-
 components:
   schemas:
-    postschema:
+    userdata:
       type: object
       properties:
         name:
@@ -141,30 +193,51 @@ components:
         height:
           type: number
           minimum: 0
+    postresponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'Data successfully uploaded!'
+        uuid:
+          type: string
+          example: 'd8a7567b-98fb-4363-a3d8-ed0296ab2936'
     updateresponse:
       type: object
       properties:
         message:
           type: string
-          example: 'Name and age successfully updated!'
+          example: 'Data successfully updated!'
     deleteresponse:
       type: object
       properties:
         message:
           type: string
-          example: 'Name and age successfully deleted!'
-    uuidresponse:
-      type: object
-      properties:
-        uuid:
-          type: string
-          example: 'd8a7567b-98fb-4363-a3d8-ed0296ab2936'
+          example: 'Data successfully deleted!'
     errormessage:
       type: object
       properties:
         message:
           type: string
           example: "Error message."
+    unauthorisedmessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Unauthorised message."
+    missingmessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Missing data message."
+    internalmessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error message."
 
   securitySchemes:
     BearerAuth:
