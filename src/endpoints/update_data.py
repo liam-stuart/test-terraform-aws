@@ -16,7 +16,7 @@ def lambda_handler(event, context):
     if not data:
         return response_creator(400, 'Please provide some data to update the existing UUID.')
 
-    path = event.get("path", None)
+    path = event.get("path", "")
     uuid = path.split('/')[-1]
     ssm_client = boto3.client('ssm')
     try:

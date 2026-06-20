@@ -10,7 +10,7 @@ logger = logging.getLogger('retrieve_data')
 
 
 def lambda_handler(event, context):
-    path = event.get("path", None)
+    path = event.get("path", "")
     uuid = path.split('/')[-1]
     ssm_client = boto3.client('ssm')
     try:
