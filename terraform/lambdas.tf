@@ -1,7 +1,3 @@
-data "aws_ecr_repository" "api_repo" {
-  name = var.ECR_REPOSITORY_NAME
-}
-
 resource "aws_lambda_function" "post_data_lambda" {
   function_name = "post_data_lambda"
   role          = aws_iam_role.lambda_exec.arn
