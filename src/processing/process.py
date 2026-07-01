@@ -6,7 +6,7 @@ from base.response_creator import response_creator
 
 
 logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger('post_data')
+logger = logging.getLogger('process_data')
 
 
 def lambda_handler(event, context):

@@ -25,6 +25,10 @@ resource "aws_api_gateway_stage" "my_api_stage" {
   stage_name    = "staging"
 }
 
+resource "aws_api_gateway_account" "global_settings" {
+  cloudwatch_role_arn = aws_iam_role.apigw_cloudwatch_role.arn
+}
+
 resource "aws_api_gateway_method_settings" "all" {
   rest_api_id = aws_api_gateway_rest_api.my_api.id
   stage_name  = aws_api_gateway_stage.my_api_stage.stage_name
@@ -36,6 +40,7 @@ resource "aws_api_gateway_method_settings" "all" {
   }
   depends_on = [aws_api_gateway_account.global_settings]
 }
+
 resource "aws_lambda_permission" "api_gw_invoke_post" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"

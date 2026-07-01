@@ -1,3 +1,8 @@
+resource "aws_iam_role" "lambda_exec" {
+  name               = "my_lambda_exec_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+}
+
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -6,11 +11,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
       identifiers = ["lambda.amazonaws.com"]
     }
   }
-}
-
-resource "aws_iam_role" "lambda_exec" {
-  name               = "my_lambda_exec_role"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
 data "aws_iam_policy_document" "lambda_permissions" {
@@ -63,7 +63,6 @@ data "aws_iam_policy_document" "lambda_permissions" {
   }
 }
 
-
 resource "aws_iam_policy" "lambda_policy" {
   name   = "lambda_access_policy"
   policy = data.aws_iam_policy_document.lambda_permissions.json
@@ -72,6 +71,11 @@ resource "aws_iam_policy" "lambda_policy" {
 resource "aws_iam_role_policy_attachment" "lambda_attach" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "post_logs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role" "apigw_cloudwatch_role" {
@@ -95,8 +99,4 @@ resource "aws_iam_role" "apigw_cloudwatch_role" {
 resource "aws_iam_role_policy_attachment" "apigw_cloudwatch_attach" {
   role       = aws_iam_role.apigw_cloudwatch_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-}
-
-resource "aws_api_gateway_account" "global_settings" {
-  cloudwatch_role_arn = aws_iam_role.apigw_cloudwatch_role.arn
 }
