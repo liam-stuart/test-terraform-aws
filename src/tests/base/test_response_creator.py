@@ -1,4 +1,5 @@
 import json
+import pytest
 from base.response_creator import response_creator
 
 
@@ -20,3 +21,8 @@ def test_response_failure():
     }
     response = response_creator(400, 'Failure.')
     assert response == expected_result
+
+
+def test_response_invalid_status_code():
+    with pytest.raises(ValueError):
+        response_creator(100, 'Invalid status code.')

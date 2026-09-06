@@ -14,3 +14,5 @@ def response_creator(status_code, content):
             'headers': {'Content-Type': 'application/json'},
             'body': json.dumps(content)
         }
+    else:
+        raise ValueError('Invalid status code provided to response_creator.')
